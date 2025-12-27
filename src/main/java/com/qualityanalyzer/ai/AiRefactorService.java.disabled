@@ -1,0 +1,35 @@
+package com.qualityanalyzer.ai;
+
+import com.qualityanalyzer.analyzer.MetricsExtractor;
+import com.qualityanalyzer.metrics.CodeMetrics;
+import com.qualityanalyzer.model.AiRefactorResponse;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AiRefactorService {
+
+    private final GeminiClient geminiClient;
+
+    public AiRefactorService(GeminiClient geminiClient) {
+        this.geminiClient = geminiClient;
+    }
+
+    public AiRefactorResponse refactorCode(String originalCode) {
+
+        CodeMetrics before = MetricsExtractor.extract(originalCode);
+
+        String prompt = PromptBuilder.buildRefactorPrompt(originalCode, before);
+
+        String improvedCode;
+
+        try {
+            improvedCode = geminiClient.generateText(prompt);
+        } catch (Exception e) {
+            improvedCode = "AI refactor failed: " + e.getMessage();
+        }
+
+        CodeMetrics after = MetricsExtractor.extract(improvedCode);
+
+        return new AiRefactorResponse(originalCode, improvedCode, before, after);
+    }
+}

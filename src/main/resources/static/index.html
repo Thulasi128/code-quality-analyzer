@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java Code Quality Analyzer</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #0d1117;
+            color: #e6edf3;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #1f6feb;
+            padding: 18px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+        }
+        .container {
+            width: 85%;
+            margin: 25px auto;
+            background-color: #161b22;
+            padding: 22px;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #238636;
+            color: #fff;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2ea043;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+<header>Java Code Quality Analyzer</header>
+
+<div class="container">
+    <input type="file" id="fileInput" accept=".java"><br><br>
+
+    <button onclick="sendRequest('/api/analyze')">Analyze Code</button>
+    <button onclick="sendRequest('/api/refactor')">AI Recommendation</button>
+
+    <div id="resultBox"></div>
+</div>
+
+<script>
+function sendRequest(endpoint) {
+    const fileInput = document.getElementById("fileInput");
+    if (!fileInput.files.length) {
+        return display("❌ Please upload a file!", true);
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    fetch(endpoint + "?t=" + new Date().getTime(), {
+        method: "POST",
+        body: formData
+    })
+        .then(r => r.json())
+        .then(data => display(data))
+        .catch(err => display("❌ " + err, true));
+}
+
+function display(data, isError=false) {
+    const box = document.getElementById("resultBox");
+    let html = `<h2>Result</h2>`;
+
+    if (data.error){
+        box.innerHTML = `<p style="color:red">${data.error}</p>`;
+        return;
+    }
+
+    if (data.metrics){
+        const m = data.metrics;
+        html += `
+        <h3>📊 Code Metrics</h3>
+        <ul>
+         <li><strong>Lines:</strong> ${m.linesOfCode}</li>
+         <li><strong>Methods:</strong> ${m.methods}</li>
+         <li><strong>Complexity:</strong> ${m.cyclomaticComplexity}</li>
+         <li><strong>Nesting Depth:</strong> ${m.nestingDepth}</li>
+         <li><strong>Comments:</strong> ${m.commentRatio}</li>
+        </ul>`;
+    }
+
+    if (data.syntaxErrors){
+        html += `<h3>🚫 Syntax Errors</h3>`;
+        html += data.syntaxErrors.length > 0
+            ? `<li style="color:red">${data.syntaxErrors.join("<br>")}</li>`
+            : `<p style="color:#4CAF50;">✔ No Syntax Errors</p>`;
+    }
+
+    if (data.qualityReport){
+        html += `
+        <h3>🧠 Quality Report</h3>
+        <p><strong>Overall:</strong> ${data.qualityReport.overallQuality}</p>
+        <p><strong>Maintainability Score:</strong> ${data.qualityReport.maintainabilityScore}</p>`;
+    }
+
+    if (data.originalCode){
+        html += `<h3>📌 Original Code</h3><pre>${data.originalCode}</pre>`;
+    }
+
+    if (data.improvedCode){
+        html += `<h3>✨ AI-Improved Code</h3><pre>${data.improvedCode}</pre>`;
+    }
+
+    if (data.remaining !== undefined){
+        html += `
+        <h3>🔋 Gemini Usage</h3>
+        <p><strong>Remaining:</strong> ${data.remaining} / ${data.limit}</p>`;
+    }
+
+    if (data.note){
+        html += `<p style="color:yellow">${data.note}</p>`;
+    }
+
+    box.innerHTML = html;
+}
+</script>
+</body>
+</html>

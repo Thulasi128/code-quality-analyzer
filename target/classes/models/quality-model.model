@@ -1,0 +1,4 @@
+MODEL_NOT_TRAINED_YET
+
+This file will contain the serialized Weka classification
+model after training on extracted code metrics.
